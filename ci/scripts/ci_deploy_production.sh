@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # ---------------------------------------------------------------------
 #
 #  LICENSE
@@ -16,35 +16,29 @@
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #  GNU General Public License for more details.
 #  --------------------------------------------------------------------
-#  @author    Rafael Hernandez - <rhernandez@teclib.com>
+#  @author    Ivan Del Pino - <idelpino@teclib.com>
 #  @copyright (C) 2017 Teclib' and contributors.
 #  @license   GPLv3 https://www.gnu.org/licenses/gpl-3.0.html
 #  @link      https://github.com/glpi-project/java-library-glpi
 #  @link      http://www.glpi-project.org/
 #  --------------------------------------------------------------------
+#
+# send to google play
 
-GIT_TAG=$(jq -r ".version" package.json)
+GH_COMMIT_MESSAGE=$(git log --pretty=oneline -n 1 $CIRCLE_SHA1)
 
-# Push commits and tags to origin branch
-# git push --follow-tags origin $CIRCLE_BRANCH
+if [[ $GH_COMMIT_MESSAGE != *"ci(release): generate CHANGELOG.md for version"* && $GH_COMMIT_MESSAGE != *"ci(build): release version"* ]]; then
 
-# push tag to github
-yarn conventional-github-releaser -p angular -t $GITHUB_TOKEN 2> /dev/null || true
+# run update version script
+ci/scripts/ci_updateversion.sh
 
-# Create zip example code
-sudo zip -r $CIRCLE_ARTIFACTS/java_example_code.zip example/*
+# run push changes script
+ci/scripts/ci_push_changes.sh
 
-# Update release name
-yarn github-release edit \
---user $CIRCLE_PROJECT_USERNAME \
---repo $CIRCLE_PROJECT_REPONAME \
---tag ${GIT_TAG} \
---name "GLPI API REST v${GIT_TAG}" \
+# run github release script
+ci/scripts/ci_github_release.sh
 
-# Upload example code release
-yarn github-release upload \
---user $CIRCLE_PROJECT_USERNAME \
---repo $CIRCLE_PROJECT_REPONAME \
---tag ${GIT_TAG} \
---name "java_example_${GIT_TAG}.zip" \
---file $CIRCLE_ARTIFACTS/java_example_code.zip
+# run bintray script
+ci/scripts/ci_bintray.sh
+
+fi
