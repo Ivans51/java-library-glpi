@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # ---------------------------------------------------------------------
 #
 #  LICENSE
@@ -16,17 +16,29 @@
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #  GNU General Public License for more details.
 #  --------------------------------------------------------------------
-#  @author    Rafael Hernandez - <rhernandez@teclib.com>
+#  @author    Ivan Del Pino - <idelpino@teclib.com>
 #  @copyright (C) 2017 Teclib' and contributors.
 #  @license   GPLv3 https://www.gnu.org/licenses/gpl-3.0.html
 #  @link      https://github.com/glpi-project/java-library-glpi
 #  @link      http://www.glpi-project.org/
 #  --------------------------------------------------------------------
+#
+# send to google play
 
-# increment version on package.json, create tag and commit with changelog
-yarn run release -m "ci(release): generate CHANGELOG.md for version %s"
+GH_COMMIT_MESSAGE=$(git log --pretty=oneline -n 1 $CIRCLE_SHA1)
 
-GIT_TAG=$(jq -r ".version" package.json)
+if [[ $GH_COMMIT_MESSAGE != *"ci(release): generate CHANGELOG.md for version"* && $GH_COMMIT_MESSAGE != *"ci(build): release version"* ]]; then
 
-# send changelog only when merged in master branch
-yarn gh-pages --dist ./ --src CHANGELOG.md --dest ./_includes/ --add -m "docs(changelog): update changelog$1 with version ${GIT_TAG}"
+# run update version script
+ci/scripts/ci_updateversion.sh
+
+# run push changes script
+ci/scripts/ci_push_changes.sh
+
+# run github release script
+ci/scripts/ci_github_release.sh
+
+# run bintray script
+ci/scripts/ci_bintray.sh
+
+fi
